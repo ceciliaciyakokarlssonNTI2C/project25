@@ -1,0 +1,12 @@
+form action="/logout" method="POST"
+  button type="submit" Logout
+h1 Uppgifter
+a href="/projects/#{project_id}/tasks/new" Lägg till uppgift
+ul
+  - sorted_tasks = tasks.sort_by { |task| Date.parse(task['deadline']) }
+  - sorted_tasks.each do |task|
+    li = task['title'] + " " + task['deadline']
+    form action="/tasks/delete" method="POST"
+        input type="hidden" name="id" value=task['id']
+        input type="hidden" name="project_id" value=project_id
+        button type="submit" Delete
