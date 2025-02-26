@@ -1,6 +1,7 @@
-form action="/login" method="post"
-  - if @error
-    p style="color: red;"= @error
-  input name="username" placeholder="Enter username" type="text"/
-  input name="password" placeholder="Enter password" type="password"/
-  input type="submit" value="submit"
+h2 Login
+<form action="/login" method="POST">
+  <p>Username: <input type="text" name="username"></p>
+  <p>Password: <input type="password" name="password"></p>
+  <input type="submit" value="Login">
+  
+<p>Don't have an account? <a href="/register">Register here</a>.</p>

@@ -133,6 +133,17 @@ get('/projects/:id/tasks/new') do
   slim(:"tasks/new", locals: { project_id: project_id })
 end
 
+get('/deadlines') do
+  db = settings.db
+  user_id = session[:user_id]
+
+  @tasks = db.execute("SELECT tasks.* FROM tasks JOIN projects ON tasks.project_id = projects.id WHERE projects.user_id = ?", [user_id])
+  @tasks = @tasks.sort_by { |task| Date.parse(task['deadline']) }
+  @tasks = @tasks.sort_by { |task| task['deadline'] ? Date.parse(task['deadline']) : Date.new(9999, 12, 31) }
+
+  slim(:"deadlines")
+end
+
 # Skapa uppgift
 post('/projects/:id/tasks/new') do
   title = params[:title]
@@ -167,8 +178,12 @@ post('/tasks/delete') do
   project_id = params[:project_id].to_i
   db = settings.db
   db.execute("DELETE FROM tasks WHERE id = ?", [task_id])
-  redirect("/projects/#{project_id}/tasks")
+  redirect request.referer || '/default_redirect_path'
+
 end
+
+
+
 
 #Logga ut
 post '/logout' do

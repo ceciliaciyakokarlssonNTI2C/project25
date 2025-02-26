@@ -1,6 +1,6 @@
 form action="/logout" method="POST"
   button type="submit" Logout
-h1 Uppgifter
+h2 Uppgifter
 a href="/projects/#{project_id}/tasks/new" Lägg till uppgift
 ul
   - sorted_tasks = tasks.sort_by { |task| Date.parse(task['deadline']) }

@@ -1,0 +1,7 @@
+h2 Hello World
+- @tasks.each do |task|
+    p = task['title'] + " " + task['deadline']
+
+    form action="/tasks/delete" method="POST"
+        input type="hidden" name="id" value=task['id']
+        button type="submit" Done
