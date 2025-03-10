@@ -1,7 +1,16 @@
-h2 Hello World
-- @tasks.each do |task|
-    p = task['title'] + " " + task['deadline']
+h2 Deadlines Overview 
 
+ul
+  - @tasks.each do |task|
+    - if task['status'] == 1
+        - @icon = "🟢"  
+    - elsif task['status'] == 2
+        - @icon = "🟡"  
+    - elsif task['status'] == 3
+        - @icon = "🔴"  
+
+    li = "#{task['title']} #{task['deadline']} #{@icon}"
     form action="/tasks/delete" method="POST"
         input type="hidden" name="id" value=task['id']
+        input type="hidden" name="project_id" value=task['id']
         button type="submit" Done

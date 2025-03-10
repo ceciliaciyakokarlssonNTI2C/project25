@@ -17,7 +17,7 @@ h1 {
     font-family: "Bebas Neue";
 }
 
-h2,h3,h4,h5,p,a{
+h2,h3,h4,h5,p,a,li{
     color: var(--theme5);
     font-family: "Bebas Neue";
 }
@@ -26,4 +26,12 @@ a {
     font-family: "Bebas Neue", sans-serif;
     text-decoration: none;
     color: var(--theme5);
+}
+
+ul {
+    list-style-type: none;
+}
+
+li {
+    list-style-type: none;
 }

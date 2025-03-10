@@ -138,19 +138,30 @@ get('/deadlines') do
   user_id = session[:user_id]
 
   @tasks = db.execute("SELECT tasks.* FROM tasks JOIN projects ON tasks.project_id = projects.id WHERE projects.user_id = ?", [user_id])
-  @tasks = @tasks.sort_by { |task| Date.parse(task['deadline']) }
   @tasks = @tasks.sort_by { |task| task['deadline'] ? Date.parse(task['deadline']) : Date.new(9999, 12, 31) }
 
   slim(:"deadlines")
 end
+
 
 # Skapa uppgift
 post('/projects/:id/tasks/new') do
   title = params[:title]
   deadline = params[:deadline]
   project_id = params[:id].to_i
+  days_left = (Date.parse(deadline) - Date.today).to_i
+
+  puts days_left
+  if days_left <= 3
+    status = 3
+  elsif days_left < 5
+    status = 2
+  else
+    status = 1
+  end
+
   db = settings.db
-  db.execute("INSERT INTO tasks (title, deadline, project_id) VALUES (?, ?, ?)", [title, deadline, project_id])
+  db.execute("INSERT INTO tasks (title, deadline, project_id, status) VALUES (?, ?, ?, ?)", [title, deadline, project_id, status])
   redirect("/projects/#{project_id}/tasks")
 end
 
