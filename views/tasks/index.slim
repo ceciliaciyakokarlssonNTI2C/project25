@@ -1,12 +1,21 @@
-form action="/logout" method="POST"
-  button type="submit" Logout
-h2 Uppgifter
-a href="/projects/#{project_id}/tasks/new" Lägg till uppgift
-ul
-  - sorted_tasks = tasks.sort_by { |task| Date.parse(task['deadline']) }
-  - sorted_tasks.each do |task|
-    li = task['title'] + " " + task['deadline']
-    form action="/tasks/delete" method="POST"
-        input type="hidden" name="id" value=task['id']
-        input type="hidden" name="project_id" value=project_id
-        button type="submit" Delete
+h2 Uppgifter  
+a href="/projects/#{project_id}/tasks/new" Lägg till uppgift  
+br
+a href="/projects" class="button back-button" Tillbaka
+
+ul.tasks-list  
+  - tasks.each do |task|
+    li.task-item
+      | #{task['title']} - Inlämning: #{task['deadline']}
+
+      
+      form action="/tasks/#{task['id']}/edit" method="get" style="display:inline;"
+        button type="submit" class="button edit-button" Edit  
+
+      form action="/tasks/delete" method="post" style="display:inline;"
+        input type="hidden" name="id" value="#{task['id']}"
+        input type="hidden" name="project_id" value="#{project_id}"
+        button type="submit" class="button delete-button" Delete
+    
+
+

@@ -1,0 +1,11 @@
+h2 Edit Task
+form action="/tasks/#{task['id']}/update" method="post"
+  label Title:
+  input type="text" name="title" value=task['title']
+
+  label Deadline:
+  input type="date" name="deadline" value=task['deadline']
+
+  input type="hidden" name="project_id" value=task['project_id']
+
+  input type="submit" value="Save changes"

@@ -8,39 +8,26 @@ require 'sinatra/flash'
 
 enable :sessions
 
-# Databasinställningar
-configure do
-  set :db, SQLite3::Database.new("db/study_planner.db")
-  settings.db.results_as_hash = true
 
-  # Skapa tabeller om de inte redan finns
-  settings.db.execute <<-SQL
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY,
-      username TEXT UNIQUE,
-      password TEXT
-    );
-  SQL
-
-  settings.db.execute <<-SQL
-    CREATE TABLE IF NOT EXISTS projects (
-      id INTEGER PRIMARY KEY,
-      name TEXT,
-      user_id INTEGER,
-      FOREIGN KEY(user_id) REFERENCES users(id)
-    );
-  SQL
-
-  settings.db.execute <<-SQL
-    CREATE TABLE IF NOT EXISTS tasks (
-      id INTEGER PRIMARY KEY,
-      title TEXT,
-      deadline DATE,
-      project_id INTEGER,
-      FOREIGN KEY(project_id) REFERENCES projects(id)
-    );
-  SQL
+before do
+  if session[:user_id]
+    db = SQLite3::Database.new('db/study_planner.db')
+    db.results_as_hash = true
+    @current_user = db.execute("SELECT * FROM users WHERE id = ?", [session[:user_id]]).first
+  end
 end
+
+helpers do
+  def admin?
+    @current_user && @current_user["rank"] == "admin"
+  end
+
+  def protected!
+    halt 403, "Not authorized\n" unless admin?
+  end
+end
+
+
 
 # Start (förstasida)
 get('/') do
@@ -58,6 +45,7 @@ post('/register') do
   password = params[:password]
   password_digest = BCrypt::Password.create(password) # Hash the password
   db = SQLite3::Database.new('db/study_planner.db')
+  db.results_as_hash = true
   db.execute("INSERT INTO users (username, password) VALUES (?, ?)", [username, password_digest])
   redirect('/login')
 end
@@ -100,9 +88,15 @@ post('/login') do
 # Visa alla projekt för en användare
 get('/projects') do
   redirect('/login') unless session[:user_id]
-  db = settings.db
+  db = SQLite3::Database.new('db/study_planner.db')
+  db.results_as_hash = true
   projects = db.execute("SELECT * FROM projects WHERE user_id = ?", [session[:user_id]])
   slim(:"projects/index", locals: { projects: projects })
+end
+
+get('/admin') do
+  protected!
+  slim(:"admin")
 end
 
 # Nytt projekt
@@ -114,7 +108,8 @@ end
 # Skapa projekt
 post('/projects/new') do
   name = params[:name]
-  db = settings.db
+  db = SQLite3::Database.new('db/study_planner.db')
+  db.results_as_hash = true
   db.execute("INSERT INTO projects (name, user_id) VALUES (?, ?)", [name, session[:user_id]])
   redirect('/projects')
 end
@@ -122,7 +117,8 @@ end
 # Visa uppgifter för ett projekt
 get('/projects/:id/tasks') do
   project_id = params[:id].to_i
-  db = settings.db
+  db = SQLite3::Database.new('db/study_planner.db')
+  db.results_as_hash = true
   tasks = db.execute("SELECT * FROM tasks WHERE project_id = ?", [project_id])
   slim(:"tasks/index", locals: { tasks: tasks, project_id: project_id })
 end
@@ -133,8 +129,23 @@ get('/projects/:id/tasks/new') do
   slim(:"tasks/new", locals: { project_id: project_id })
 end
 
+post('/tasks/:id/update') do
+  db = SQLite3::Database.new('db/study_planner.db')
+  db.results_as_hash = true
+  task_id = params[:id].to_i
+  title = params[:title]
+  deadline = params[:deadline]
+  project_id = params[:project_id] || db.execute("SELECT project_id FROM tasks WHERE id = ?", [task_id]).first['project_id']
+
+  db.execute("UPDATE tasks SET title = ?, deadline = ? WHERE id = ?", [title, deadline, task_id])
+
+  redirect("/projects/#{project_id}/tasks")
+end
+
+
 get('/deadlines') do
-  db = settings.db
+  db = SQLite3::Database.new('db/study_planner.db')
+  db.results_as_hash = true
   user_id = session[:user_id]
 
   @tasks = db.execute("SELECT tasks.* FROM tasks JOIN projects ON tasks.project_id = projects.id WHERE projects.user_id = ?", [user_id])
@@ -151,7 +162,6 @@ post('/projects/:id/tasks/new') do
   project_id = params[:id].to_i
   days_left = (Date.parse(deadline) - Date.today).to_i
 
-  puts days_left
   if days_left <= 3
     status = 3
   elsif days_left < 5
@@ -160,7 +170,8 @@ post('/projects/:id/tasks/new') do
     status = 1
   end
 
-  db = settings.db
+  db = SQLite3::Database.new('db/study_planner.db')
+  db.results_as_hash = true
   db.execute("INSERT INTO tasks (title, deadline, project_id, status) VALUES (?, ?, ?, ?)", [title, deadline, project_id, status])
   redirect("/projects/#{project_id}/tasks")
 end
@@ -168,7 +179,8 @@ end
 # Redigera uppgift
 get('/tasks/:id/edit') do
   task_id = params[:id].to_i
-  db = settings.db
+  db = SQLite3::Database.new('db/study_planner.db')
+  db.results_as_hash = true
   task = db.execute("SELECT * FROM tasks WHERE id = ?", [task_id]).first
   slim(:"tasks/edit", locals: { task: task })
 end
@@ -178,7 +190,8 @@ post('/tasks/:id/update') do
   task_id = params[:id].to_i
   title = params[:title]
   deadline = params[:deadline]
-  db = settings.db
+  db = SQLite3::Database.new('db/study_planner.db')
+  db.results_as_hash = true
   db.execute("UPDATE tasks SET title = ?, deadline = ? WHERE id = ?", [title, deadline, task_id])
   redirect("/projects/#{params[:project_id]}/tasks")
 end
@@ -187,7 +200,8 @@ end
 post('/tasks/delete') do
   task_id = params[:id].to_i
   project_id = params[:project_id].to_i
-  db = settings.db
+  db = SQLite3::Database.new('db/study_planner.db')
+  db.results_as_hash = true
   db.execute("DELETE FROM tasks WHERE id = ?", [task_id])
   redirect request.referer || '/default_redirect_path'
 
