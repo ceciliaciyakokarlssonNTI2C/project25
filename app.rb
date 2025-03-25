@@ -87,6 +87,7 @@ post('/admin/users/:id/update') do
   user_id = params[:id].to_i
   username = params[:username]
   rank = params[:rank]
+  p "rank is #{rank},username is #{username}, user_id is #{user_id}"
   db = SQLite3::Database.new('db/study_planner.db')
   db.results_as_hash = true
   db.execute("UPDATE users SET username = ?, rank = ? WHERE id = ?", [username, rank, user_id])

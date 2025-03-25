@@ -1,5 +1,7 @@
+p = user
+
 h2 Redigera användare
-form action="/admin/users/:id/update" method="post"
+form action="/admin/users/#{user['id']}/update" method="post"
   label for="username" Användarnamn:
   input type="text" name="username" value="#{user['username']}"
 
