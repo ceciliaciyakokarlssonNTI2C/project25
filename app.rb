@@ -27,6 +27,72 @@ helpers do
   end
 end
 
+get('/admin/users') do
+  protected!
+  db = SQLite3::Database.new('db/study_planner.db')
+  db.results_as_hash = true
+  users = db.execute("SELECT * FROM users")
+  slim(:'admin/users', locals: { users: users })
+end
+
+get('/admin/user_projects') do
+  protected!
+  db = SQLite3::Database.new('db/study_planner.db')
+  db.results_as_hash = true
+  projects = db.execute("SELECT * FROM projects")
+  slim(:'admin/user_projects', locals: { projects: projects })
+end
+
+get('/admin/users/:id/projects') do
+  protected!
+  user_id = params[:id].to_i
+  db = SQLite3::Database.new('db/study_planner.db')
+  db.results_as_hash = true
+  projects = db.execute("SELECT * FROM projects WHERE user_id = ?", [user_id])
+  slim(:'admin/user_projects', locals: { projects: projects, user_id: user_id })
+end
+
+post('/admin/users/:id/delete') do
+  protected!
+  user_id = params[:id].to_i
+  db = SQLite3::Database.new('db/study_planner.db')
+  db.results_as_hash = true
+  db.execute("DELETE FROM users WHERE id = ?", [user_id])
+  db.execute("DELETE FROM projects WHERE user_id = ?", [user_id])
+  flash[:success] = "Användaren och deras projekt har tagits bort."
+  redirect('/admin/users')
+end
+
+post('/admin/projects/:id/delete') do
+  protected!
+  project_id = params[:id].to_i
+  db = SQLite3::Database.new('db/study_planner.db')
+  db.results_as_hash = true
+  db.execute("DELETE FROM projects WHERE id = ?", [project_id])
+  flash[:success] = "Projektet har tagits bort."
+  redirect request.referer || '/admin/users'
+end
+
+get('/admin/users/:id/edit') do
+  protected!
+  user_id = params[:id].to_i
+  db = SQLite3::Database.new('db/study_planner.db')
+  db.results_as_hash = true
+  user = db.execute("SELECT * FROM users WHERE id = ?", [user_id]).first
+  slim(:'admin/edit_user', locals: { user: user })
+end
+
+post('/admin/users/:id/update') do
+  protected!
+  user_id = params[:id].to_i
+  username = params[:username]
+  rank = params[:rank]
+  db = SQLite3::Database.new('db/study_planner.db')
+  db.results_as_hash = true
+  db.execute("UPDATE users SET username = ?, rank = ? WHERE id = ?", [username, rank, user_id])
+  flash[:success] = "Användaren har uppdaterats."
+  redirect('/admin/users')
+end
 
 
 # Start (förstasida)
@@ -96,7 +162,7 @@ end
 
 get('/admin') do
   protected!
-  slim(:"admin")
+  slim(:"admin/admin")
 end
 
 # Nytt projekt

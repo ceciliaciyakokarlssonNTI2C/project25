@@ -1,0 +1,11 @@
+h2 Redigera användare
+form action="/admin/users/:id/update" method="post"
+  label for="username" Användarnamn:
+  input type="text" name="username" value="#{user['username']}"
+
+  label for="rank" Rank:
+  select name="rank"
+    option value="user" selected=(user['rank'] == 'user') Användare
+    option value="admin" selected=(user['rank'] == 'admin') Admin
+
+  input type="submit" value="Uppdatera användare"

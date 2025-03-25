@@ -1,0 +1,9 @@
+h2 Projekt för användare
+ul
+  - projects.each do |project|
+    li
+      | #{project['name']}
+      form action="/admin/projects/#{project['id']}/delete" method="post"
+        input type="submit" value="Ta bort projekt"
+
+a href="/admin/users" Tillbaka till alla användare

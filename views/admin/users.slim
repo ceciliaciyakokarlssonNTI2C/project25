@@ -1,0 +1,13 @@
+h2 Alla användare
+br
+a href="/admin" class="button back-button" Tillbaka
+
+ul
+  - users.each do |user|
+    li
+      | #{user['username']} (Rank: #{user['rank']})
+      a href="/admin/users/#{user['id']}/edit" Redigera
+      form action="/admin/users/#{user['id']}/delete" method="post"
+        input type="submit" value="Ta bort"
+
+    /   a href="/admin/users/#{user['id']}/projects" Projekts
