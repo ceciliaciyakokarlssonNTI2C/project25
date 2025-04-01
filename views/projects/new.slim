@@ -1,7 +1,9 @@
 h2 Skapa nytt projekt
-a href="/projects" class="button back-button" Tillbaka
+form action="/projects" method="GET"
+  button type="button back-button" Tillbaka
 
 form action="/projects/new" method="POST"
   label Projektnamn:
   input type="text" name="name"
   button Skapa
+

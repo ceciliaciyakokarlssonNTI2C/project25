@@ -26,7 +26,11 @@ helpers do
     halt 403, "Not authorized\n" unless admin?
   end
 end
-
+# ---------------Admin----------------
+get('/admin') do
+  protected!
+  slim(:"admin/admin")
+end
 get('/admin/users') do
   protected!
   db = SQLite3::Database.new('db/study_planner.db')
@@ -52,6 +56,92 @@ get('/admin/users/:id/projects') do
   slim(:'admin/user_projects', locals: { projects: projects, user_id: user_id })
 end
 
+get('/admin/users/:id/edit') do
+  protected!
+  user_id = params[:id].to_i
+  db = SQLite3::Database.new('db/study_planner.db')
+  db.results_as_hash = true
+  user = db.execute("SELECT * FROM users WHERE id = ?", [user_id]).first
+  slim(:'admin/edit_user', locals: { user: user })
+end
+
+# -----------------Admin----------------
+
+# -----------------Startpage-------------
+
+# Start (förstasida)
+get('/') do
+  slim(:start)
+end
+
+# Registreringssida
+get('/register') do
+  slim(:register)
+end
+# Logga in-sida
+get('/login') do
+  slim(:login)
+end
+# -----------------Startpage-------------
+
+# -----------------Userpage----------------
+
+
+# Visa alla projekt för en användare
+get('/projects') do
+  redirect('/login') unless session[:user_id]
+  db = SQLite3::Database.new('db/study_planner.db')
+  db.results_as_hash = true
+  projects = db.execute("SELECT * FROM projects WHERE user_id = ?", [session[:user_id]])
+  slim(:"projects/index", locals: { projects: projects })
+end
+
+# Nytt projekt
+get('/projects/new') do
+  redirect('/login') unless session[:user_id]
+  slim(:"projects/new")
+end
+
+# Visa uppgifter för ett projekt
+get('/projects/:id/tasks') do
+  project_id = params[:id].to_i
+  db = SQLite3::Database.new('db/study_planner.db')
+  db.results_as_hash = true
+  tasks = db.execute("SELECT * FROM tasks WHERE project_id = ?", [project_id])
+  slim(:"tasks/index", locals: { tasks: tasks, project_id: project_id })
+end
+
+# Ny uppgift
+get('/projects/:id/tasks/new') do
+  project_id = params[:id].to_i
+  slim(:"tasks/new", locals: { project_id: project_id })
+end
+
+get('/deadlines') do
+  db = SQLite3::Database.new('db/study_planner.db')
+  db.results_as_hash = true
+  user_id = session[:user_id]
+
+  @tasks = db.execute("SELECT tasks.* FROM tasks JOIN projects ON tasks.project_id = projects.id WHERE projects.user_id = ?", [user_id])
+  @tasks = @tasks.sort_by { |task| task['deadline'] ? Date.parse(task['deadline']) : Date.new(9999, 12, 31) }
+
+  slim(:"deadlines")
+end
+
+# Redigera uppgift
+get('/tasks/:id/edit') do
+  task_id = params[:id].to_i
+  db = SQLite3::Database.new('db/study_planner.db')
+  db.results_as_hash = true
+  task = db.execute("SELECT * FROM tasks WHERE id = ?", [task_id]).first
+  slim(:"tasks/edit", locals: { task: task })
+end
+
+# -----------------Userpage----------------
+
+# -----------------Admin----------------
+
+
 post('/admin/users/:id/delete') do
   protected!
   user_id = params[:id].to_i
@@ -73,14 +163,6 @@ post('/admin/projects/:id/delete') do
   redirect request.referer || '/admin/users'
 end
 
-get('/admin/users/:id/edit') do
-  protected!
-  user_id = params[:id].to_i
-  db = SQLite3::Database.new('db/study_planner.db')
-  db.results_as_hash = true
-  user = db.execute("SELECT * FROM users WHERE id = ?", [user_id]).first
-  slim(:'admin/edit_user', locals: { user: user })
-end
 
 post('/admin/users/:id/update') do
   protected!
@@ -95,16 +177,9 @@ post('/admin/users/:id/update') do
   redirect('/admin/users')
 end
 
+# -----------------Admin----------------
 
-# Start (förstasida)
-get('/') do
-  slim(:start)
-end
-
-# Registreringssida
-get('/register') do
-  slim(:register)
-end
+# -----------------Startpage----------------
 
 # Hantera registrering
 post('/register') do
@@ -117,60 +192,38 @@ post('/register') do
   redirect('/login')
 end
 
-
-# Logga in-sida
-get('/login') do
-  slim(:login)
-end
-
 # Hantera inloggning
 post('/login') do
-    username = params[:username]
-    password = params[:password]
-  
-    db = SQLite3::Database.new('db/study_planner.db')
-    db.results_as_hash = true
-  
-    # Fetch user by username
-    result = db.execute("SELECT * FROM users WHERE username = ?", [username]).first
-  
-    if result.nil?
-      @error = "Användarnamn hittades inte"
-      return slim(:login) # Render the login form again with an error message
-    end
-  
-    pwdigest = result["password"]
-    id = result["id"]
-  
-    # Check the password
-    if BCrypt::Password.new(pwdigest) == password
-      session[:user_id] = id
-      redirect('/projects')
-    else
-      @error = "FEL LÖSENORD"
-      return slim(:login) # Render the login form again with an error message
-    end
-  end
+  username = params[:username]
+  password = params[:password]
 
-# Visa alla projekt för en användare
-get('/projects') do
-  redirect('/login') unless session[:user_id]
   db = SQLite3::Database.new('db/study_planner.db')
   db.results_as_hash = true
-  projects = db.execute("SELECT * FROM projects WHERE user_id = ?", [session[:user_id]])
-  slim(:"projects/index", locals: { projects: projects })
+
+  # Fetch user by username
+  result = db.execute("SELECT * FROM users WHERE username = ?", [username]).first
+
+  if result.nil?
+    @error = "Användarnamn hittades inte"
+    return slim(:login) # Render the login form again with an error message
+  end
+
+  pwdigest = result["password"]
+  id = result["id"]
+
+  # Check the password
+  if BCrypt::Password.new(pwdigest) == password
+    session[:user_id] = id
+    redirect('/projects')
+  else
+    @error = "FEL LÖSENORD"
+    return slim(:login) # Render the login form again with an error message
+  end
 end
 
-get('/admin') do
-  protected!
-  slim(:"admin/admin")
-end
+# -----------------Startpage----------------
 
-# Nytt projekt
-get('/projects/new') do
-  redirect('/login') unless session[:user_id]
-  slim(:"projects/new")
-end
+# -----------------Userpage----------------
 
 # Skapa projekt
 post('/projects/new') do
@@ -181,20 +234,7 @@ post('/projects/new') do
   redirect('/projects')
 end
 
-# Visa uppgifter för ett projekt
-get('/projects/:id/tasks') do
-  project_id = params[:id].to_i
-  db = SQLite3::Database.new('db/study_planner.db')
-  db.results_as_hash = true
-  tasks = db.execute("SELECT * FROM tasks WHERE project_id = ?", [project_id])
-  slim(:"tasks/index", locals: { tasks: tasks, project_id: project_id })
-end
 
-# Ny uppgift
-get('/projects/:id/tasks/new') do
-  project_id = params[:id].to_i
-  slim(:"tasks/new", locals: { project_id: project_id })
-end
 
 post('/tasks/:id/update') do
   db = SQLite3::Database.new('db/study_planner.db')
@@ -207,18 +247,6 @@ post('/tasks/:id/update') do
   db.execute("UPDATE tasks SET title = ?, deadline = ? WHERE id = ?", [title, deadline, task_id])
 
   redirect("/projects/#{project_id}/tasks")
-end
-
-
-get('/deadlines') do
-  db = SQLite3::Database.new('db/study_planner.db')
-  db.results_as_hash = true
-  user_id = session[:user_id]
-
-  @tasks = db.execute("SELECT tasks.* FROM tasks JOIN projects ON tasks.project_id = projects.id WHERE projects.user_id = ?", [user_id])
-  @tasks = @tasks.sort_by { |task| task['deadline'] ? Date.parse(task['deadline']) : Date.new(9999, 12, 31) }
-
-  slim(:"deadlines")
 end
 
 
@@ -243,15 +271,6 @@ post('/projects/:id/tasks/new') do
   redirect("/projects/#{project_id}/tasks")
 end
 
-# Redigera uppgift
-get('/tasks/:id/edit') do
-  task_id = params[:id].to_i
-  db = SQLite3::Database.new('db/study_planner.db')
-  db.results_as_hash = true
-  task = db.execute("SELECT * FROM tasks WHERE id = ?", [task_id]).first
-  slim(:"tasks/edit", locals: { task: task })
-end
-
 # Uppdatera uppgift
 post('/tasks/:id/update') do
   task_id = params[:id].to_i
@@ -274,8 +293,7 @@ post('/tasks/delete') do
 
 end
 
-
-
+# -----------------Userpage----------------
 
 #Logga ut
 post '/logout' do
@@ -283,8 +301,4 @@ post '/logout' do
   redirect '/'   
 end
 
-post '/logout' do
-  session.clear
-  flash[:success] = "You have successfully logged out."
-  redirect '/'
-end
+
