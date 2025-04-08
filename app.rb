@@ -6,6 +6,7 @@ require 'bcrypt'
 require 'sinatra/flash'
 
 
+
 enable :sessions
 
 
@@ -149,7 +150,7 @@ post('/admin/users/:id/delete') do
   db.results_as_hash = true
   db.execute("DELETE FROM users WHERE id = ?", [user_id])
   db.execute("DELETE FROM projects WHERE user_id = ?", [user_id])
-  flash[:success] = "Användaren och deras projekt har tagits bort."
+  flash[:notice] = "Användaren och deras projekt har tagits bort."
   redirect('/admin/users')
 end
 
@@ -159,7 +160,7 @@ post('/admin/projects/:id/delete') do
   db = SQLite3::Database.new('db/study_planner.db')
   db.results_as_hash = true
   db.execute("DELETE FROM projects WHERE id = ?", [project_id])
-  flash[:success] = "Projektet har tagits bort."
+  flash[:notice] = "Projektet har tagits bort."
   redirect request.referer || '/admin/users'
 end
 
@@ -173,7 +174,7 @@ post('/admin/users/:id/update') do
   db = SQLite3::Database.new('db/study_planner.db')
   db.results_as_hash = true
   db.execute("UPDATE users SET username = ?, rank = ? WHERE id = ?", [username, rank, user_id])
-  flash[:success] = "Användaren har uppdaterats."
+  flash[:notice] = "Användaren har uppdaterats."
   redirect('/admin/users')
 end
 
