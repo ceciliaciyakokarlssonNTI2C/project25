@@ -160,6 +160,7 @@ post('/admin/projects/:id/delete') do
   db = SQLite3::Database.new('db/study_planner.db')
   db.results_as_hash = true
   db.execute("DELETE FROM projects WHERE id = ?", [project_id])
+  db.execute("DELETE FROM tasks WHERE project_id = ?", [project_id])
   flash[:notice] = "Projektet har tagits bort."
   redirect request.referer || '/admin/users'
 end
